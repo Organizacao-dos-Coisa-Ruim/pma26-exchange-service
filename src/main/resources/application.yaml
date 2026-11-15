@@ -8,6 +8,23 @@ server:
 spring:
   application:
     name: exchange
+  # Cache das cotações (gargalo #76): a cotação de um par é igual para todos os usuários,
+  # então guardamos a resposta da AwesomeAPI no Redis por alguns minutos.
+  cache:
+    # redis (padrão) ou none, para medir o sistema sem cache com a mesma imagem
+    type: ${EXCHANGE_CACHE_TYPE:redis}
+    # declarar o nome na subida faz o Micrometer publicar as métricas de hit/miss deste cache
+    cache-names: rates
+    redis:
+      time-to-live: ${EXCHANGE_CACHE_TTL:5m}
+      key-prefix: "exchange:"
+      enable-statistics: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      # se o Redis não responder rápido, desiste e vai direto à AwesomeAPI (CacheConfig)
+      timeout: 500ms
   cloud:
     openfeign:
       client:
