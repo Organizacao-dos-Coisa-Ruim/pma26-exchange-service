@@ -1,0 +1,5 @@
+# Nos testes o cache fica em memória (ConcurrentHashMap): mesmo comportamento do @Cacheable,
+# sem precisar de um Redis rodando no CI.
+spring:
+  cache:
+    type: simple

@@ -7,9 +7,9 @@ import static org.mockito.Mockito.when;
 
 import java.util.Map;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.web.server.ResponseStatusException;
 
 import feign.FeignException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 /** Testes unitários do RateProvider: a API externa (AwesomeApiClient) é mockada. */
 @ExtendWith(MockitoExtension.class)
@@ -25,8 +26,14 @@ class RateProviderTest {
   @Mock
   private AwesomeApiClient awesomeApiClient;
 
-  @InjectMocks
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+
   private RateProvider rateProvider;
+
+  @BeforeEach
+  void setUp() {
+    rateProvider = new RateProvider(awesomeApiClient, meterRegistry);
+  }
 
   @Test
   void fetchConverteARespostaDaApi() {
@@ -39,6 +46,7 @@ class RateProviderTest {
     assertThat(rate.sell()).isEqualByComparingTo("5.668");
     assertThat(rate.buy()).isEqualByComparingTo("5.6666");
     assertThat(rate.date()).isEqualTo("2026-11-13 18:30:13");
+    assertThat(meterRegistry.counter("exchange.external.calls").count()).isEqualTo(1);
   }
 
   @Test
