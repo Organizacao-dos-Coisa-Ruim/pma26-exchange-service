@@ -38,7 +38,7 @@ public class RateProvider {
       if (e.status() == HttpStatus.NOT_FOUND.value()) {
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "par de moedas não encontrado: " + from + "-" + to);
       }
-      log.warn("AwesomeAPI falhou para {}-{}: status {}", from, to, e.status());
+      log.warn("AwesomeAPI falhou para {}-{}: status {}: {}", from, to, e.status(), e.getMessage());
       throw unavailable();
     }
 
