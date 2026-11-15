@@ -103,6 +103,35 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<!-- Scan de dependências (OWASP Dependency-Check, gargalo #78): procura CVEs conhecidas nas
+			     bibliotecas do projeto. Não roda no build normal; só com ./mvnw dependency-check:check
+			     (workflow .github/workflows/dependency-check.yml). -->
+			<plugin>
+				<groupId>org.owasp</groupId>
+				<artifactId>dependency-check-maven</artifactId>
+				<version>12.2.2</version>
+				<configuration>
+					<!-- quebra o build se alguma dependência tiver CVE com nota CVSS >= 7 (alta ou crítica) -->
+					<failBuildOnCVSS>7</failBuildOnCVSS>
+					<formats>
+						<format>HTML</format>
+						<format>JSON</format>
+					</formats>
+					<!-- dependências de teste não vão para a imagem -->
+					<skipTestScope>true</skipTestScope>
+					<!-- falsos positivos aceitos, cada um com justificativa -->
+					<suppressionFiles>
+						<suppressionFile>${project.basedir}/dependency-check-suppressions.xml</suppressionFile>
+					</suppressionFiles>
+					<!-- chave gratuita da NVD (https://nvd.nist.gov/developers/request-an-api-key): sem ela o download da base é bem mais lento -->
+					<nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+					<!-- analisadores de outras linguagens: não se aplicam e alguns precisam de rede/ferramentas extras -->
+					<assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+					<nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+					<nodeAuditAnalyzerEnabled>false</nodeAuditAnalyzerEnabled>
+					<ossIndexAnalyzerEnabled>false</ossIndexAnalyzerEnabled>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
