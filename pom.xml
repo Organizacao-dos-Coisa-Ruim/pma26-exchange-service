@@ -41,6 +41,16 @@
 			<artifactId>spring-cloud-starter-openfeign</artifactId>
 		</dependency>
 
+		<!-- Cache das cotações no Redis (gargalo #76): @Cacheable + cliente Redis (Lettuce) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+
 		<!-- Interface (instale antes com ./mvnw install em pma26-exchange) -->
 		<dependency>
 			<groupId>pma</groupId>
