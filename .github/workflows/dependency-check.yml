@@ -1,0 +1,84 @@
+# Scan de dependências (OWASP Dependency-Check, gargalo #78)
+#
+# Procura CVEs conhecidas nas bibliotecas do pom.xml e quebra se alguma tiver nota CVSS >= 7.
+# Complementa o OWASP ZAP do pma26: o ZAP ataca o sistema rodando, este olha as bibliotecas.
+#
+# Não roda em todo push porque é lento: baixa a base de vulnerabilidades da NVD (fica em cache).
+# Roda quando o pom.xml muda, toda segunda-feira (CVEs novas aparecem sem o código mudar) e manualmente.
+#
+# Precisa do secret NVD_API_KEY (chave gratuita: https://nvd.nist.gov/developers/request-an-api-key).
+# Sem a chave, a NVD bloqueia o download da base por rate limit (HTTP 429) e o scan não roda;
+# nesse caso o job só avisa e termina, em vez de quebrar todo PR.
+name: Dependency-Check
+
+on:
+  push:
+    branches: [main]
+    paths: [pom.xml, dependency-check-suppressions.xml, .github/workflows/dependency-check.yml]
+  pull_request:
+    paths: [pom.xml, dependency-check-suppressions.xml, .github/workflows/dependency-check.yml]
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+jobs:
+  dependency-check:
+    name: CVEs nas dependências
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+    steps:
+      # sem a chave, os passos seguintes são pulados (ok=false) e o job termina com um aviso
+      - name: Verificar NVD_API_KEY
+        id: key
+        run: |
+          if [ -z "$NVD_API_KEY" ]; then
+            echo "::warning::Secret NVD_API_KEY não configurado; o Dependency-Check não foi executado."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.ok == 'true'
+
+      - name: Checkout da interface exchange
+        if: steps.key.outputs.ok == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: Organizacao-dos-Coisa-Ruim/pma26-exchange
+          path: .deps/exchange
+
+      - uses: actions/setup-java@v4
+        if: steps.key.outputs.ok == 'true'
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      # restaura a base da NVD da última execução (restore-keys) e salva a versão atualizada com uma
+      # chave nova; assim cada execução só baixa as CVEs publicadas desde a anterior
+      - name: Cache da base de vulnerabilidades
+        if: steps.key.outputs.ok == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: nvd-${{ github.run_id }}
+          restore-keys: nvd-
+
+      - name: Instalar interface
+        if: steps.key.outputs.ok == 'true'
+        run: mvn -B -q install -DskipTests -f .deps/exchange/pom.xml
+
+      - name: Dependency-Check
+        if: steps.key.outputs.ok == 'true'
+        run: mvn -B dependency-check:check
+
+      - name: Relatório
+        if: always() && steps.key.outputs.ok == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: target/dependency-check-report.*
+          if-no-files-found: ignore

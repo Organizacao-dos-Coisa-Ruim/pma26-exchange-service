@@ -67,3 +67,16 @@ No sistema inteiro: `docker compose -f docker/compose.yml up --build` no `pma26`
 - `ExchangeServiceTest`: validação das moedas, com o `RateProvider` mockado.
 - `RateProviderTest`: conversão e tradução de erros (404, timeout, 5xx, valor inválido), com a API externa mockada.
 - `ExchangeResourceIntegrationTest`: a aplicação inteira com MockMvc e a API externa mockada (`@MockitoBean`), sem acessar a internet.
+
+## Scan de dependências (gargalo #78)
+
+OWASP Dependency-Check procura CVEs conhecidas nas bibliotecas e quebra com nota CVSS ≥ 7:
+
+```bash
+NVD_API_KEY=... ./mvnw dependency-check:check   # relatório em target/dependency-check-report.html
+```
+
+Precisa de uma chave gratuita da NVD (https://nvd.nist.gov/developers/request-an-api-key); sem ela, a NVD bloqueia
+o download da base (HTTP 429). No GitHub, a chave fica no secret `NVD_API_KEY` e o workflow
+`.github/workflows/dependency-check.yml` roda quando o `pom.xml` muda e toda segunda-feira. Falsos positivos aceitos
+vão em `dependency-check-suppressions.xml`, com justificativa.
