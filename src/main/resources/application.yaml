@@ -1,0 +1,40 @@
+server:
+  port: 8080
+  tomcat:
+    # publica métricas das threads do Tomcat (ocupadas / máximo), úteis no load test
+    mbeanregistry:
+      enabled: true
+
+spring:
+  application:
+    name: exchange
+  cloud:
+    openfeign:
+      client:
+        config:
+          # cliente da API externa: falha rápido (vira 503) em vez de prender a thread
+          awesomeapi:
+            connect-timeout: 2000
+            read-timeout: 3000
+
+pma:
+  exchange:
+    # API externa de cotações (AwesomeAPI, sem chave). Sobrescreva para apontar para um mock.
+    api-url: ${EXCHANGE_API_URL:https://economia.awesomeapi.com.br}
+
+# Observabilidade: health e métricas no formato do Prometheus em /actuator/*.
+# O gateway não roteia /actuator, então isso só é acessível pela rede interna.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    distribution:
+      # histograma de latência por rota, para calcular p95/p99 no Grafana
+      percentiles-histogram:
+        http.server.requests: true
