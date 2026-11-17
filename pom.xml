@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.1.1</version>
+		<version>4.1.2</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>pma</groupId>
@@ -28,7 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
-		<spring-cloud.version>2025.1.2</spring-cloud.version>
+		<spring-cloud.version>2025.1.4</spring-cloud.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -125,6 +125,10 @@
 					</suppressionFiles>
 					<!-- chave gratuita da NVD (https://nvd.nist.gov/developers/request-an-api-key): sem ela o download da base é bem mais lento -->
 					<nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+					<!-- a API da NVD devolve 503 de vez em quando no download da base (~213 páginas); com o padrão
+					     o plugin desistia no meio. Mais espera entre páginas e mais tentativas por página. -->
+					<nvdApiDelay>3000</nvdApiDelay>
+					<nvdMaxRetryCount>50</nvdMaxRetryCount>
 					<!-- analisadores de outras linguagens: não se aplicam e alguns precisam de rede/ferramentas extras -->
 					<assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
 					<nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
